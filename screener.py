@@ -1,28 +1,25 @@
+#!/usr/local/bin/python3
+
 import os
 import quandl
 
 def readRuss():
-    ticks = []  
-    
     try:
+        ticks = [] 
         russ = open('russ3.csv', 'r').read()
         split = russ.split('\n')
+
         for tick in split:
             ticks.append('WIKI/' + tick.rstrip())
-
+        return ticks
     except Exception as e:
         print('Failed to read Russell 3000:', str(e))
 
-    return ticks
-
 def getData(ticks):
     try: 
-        data = quandl.get(ticks, start_date='2017-05-01')
-
+        return quandl.get(ticks, start_date='2017-05-01')
     except Exception as e:
         print('Failed to get stock data:', str(e))
-
-    return data
 
 def printClose(ticks, data):
     for tick in ticks:
