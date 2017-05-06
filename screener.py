@@ -4,6 +4,7 @@ import os, sys, getopt
 import quandl as ql
 import pandas as pd
 import numpy  as np
+from pylab import plot, figure, savefig
 
 # read Russell 3000 constituents from a csv
 def readRuss():
@@ -29,9 +30,7 @@ def getData(query, date):
 
 # fit a first-degree polynomial (i.e. a line) to the data
 def calcTrend(data):
-    coeffs = np.polyfit(data.index.values, list(data), 1)
-    slope  = coeffs[-2]
-    return float(slope)
+    return np.polyfit(data.index.values, list(data), 1)
 
 def main(argv):
     tick = 'WIKI/'      # ticker will be appended
@@ -63,12 +62,28 @@ def main(argv):
     # retrieve the 4th & 5th cols (Close & Volume)
     close  = getData(tick + '.4', date)      
     vol    = getData(tick + '.5', date)
-    data   = pd.concat([close, vol], axis=1)
+    data   = pd.concat([close, vol], axis=1).reset_index(drop=True)
     print(data)
 
     # calculate trends on price and volume
-    print('Price trend:',  calcTrend(data['Close'].reset_index(drop=True)))
-    print('Volume trend:', calcTrend(data['Volume'].reset_index(drop=True)))
+    pcoeffs = calcTrend(data['Close'])
+    vcoeffs = calcTrend(data['Volume'])
+
+    print('Price trend:', pcoeffs[0])
+    print('Volume trend:', vcoeffs[0])
+
+    # save plots of trend lines
+    xi = data.index.values
+  
+    figure()
+    pline = pcoeffs[0] * xi + pcoeffs[1]
+    plot(xi, pline, 'r-', xi, list(data['Close']), '-o')
+    savefig('price.png')
+
+    figure()
+    vline = vcoeffs[0] * xi + vcoeffs[1]
+    plot(xi, vline, 'r-', xi, list(data['Volume']), '-o')
+    savefig('volume.png')
 
 #   ticks = readRuss()
 #   q_close = [ tick + '.4' for tick in ticks[:5] ] 
