@@ -5,6 +5,7 @@ import quandl as ql
 import pandas as pd
 import numpy  as np
 
+# read Russell 3000 constituents from a csv
 def readRuss():
     try:
         ticks = [] 
@@ -18,16 +19,23 @@ def readRuss():
     except Exception as e:
         print('Failed to read Russell 3000:', str(e))
 
-def getData(ticks, date):
+# retrieve stock data from Quandl
+def getData(query, date):
     try: 
-        return ql.get(ticks, start_date = date)
+        return ql.get(query, start_date = date)
 
     except Exception as e:
         print('Failed to get stock data:', str(e))
 
+# fit a first-degree polynomial (i.e. a line) to the data
+def calcTrend(data):
+    coeffs = np.polyfit(data.index.values, list(data), 1)
+    slope  = coeffs[-2]
+    return float(slope)
+
 def main(argv):
-    tick = 'WIKI/'
-    date = '2017/01/01'
+    tick = 'WIKI/'      # ticker will be appended
+    date = '2017/01/01' # default start date
 
     ql.ApiConfig.api_key = os.environ['QUANDL_KEY']
     usage = 'usage: screener.py -t <ticker> -d <start_date>'
@@ -36,6 +44,7 @@ def main(argv):
         print(usage)
         sys.exit(2)
 
+    # parse command-line args
     try:
         opts, args = getopt.getopt(argv, 'ht:d', ['ticker=', 'date='])
     except getopt.GetoptError:
@@ -51,18 +60,20 @@ def main(argv):
         elif opt in ('-d', '--date'):
             date = arg
 
-    close = getData(tick + '.4', date)
-    vol   = getData(tick + '.5', date)
-    print(pd.concat([close, vol], axis=1))
+    # retrieve the 4th & 5th cols (Close & Volume)
+    close  = getData(tick + '.4', date)      
+    vol    = getData(tick + '.5', date)
+    data   = pd.concat([close, vol], axis=1)
+    print(data)
+
+    # calculate trends on price and volume
+    print('Price trend:',  calcTrend(data['Close'].reset_index(drop=True)))
+    print('Volume trend:', calcTrend(data['Volume'].reset_index(drop=True)))
 
 #   ticks = readRuss()
 #   q_close = [ tick + '.4' for tick in ticks[:5] ] 
 #   q_vol   = [ tick + '.5' for tick in ticks[:5] ]
 #   data = getData(q_close + q_vol, '2017-01-01')
-
-#   vol  = selectVol(data);
-#   close = selectClose(data);
-
 
 if __name__ == "__main__":
     # execute only if run as a script
